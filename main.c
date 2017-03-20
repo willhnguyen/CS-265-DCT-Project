@@ -4,8 +4,7 @@
 
 // Function Prototypes
 int chooseMode();
-void encrypt();
-void decrypt();
+void DCT(int);
 void decrypt_with_crib();
 int * rearrange_key(char *, int);
 char * single_column_transposition(char *, int, int *, int, int);
@@ -16,10 +15,12 @@ int main() {
 
     switch(chooseMode()) {
         case(0):
-            encrypt();
+            // encrypt();
+            DCT(0);
             break;
         case(1):
-            decrypt();
+            // decrypt();
+            DCT(1);
             break;
         case(2):
             decrypt_with_crib();
@@ -49,28 +50,32 @@ int chooseMode() {
     return mode;
 }
 
-void encrypt() {
+void DCT(int mode) {
     // Prompt for
-    // - plaintext size
-    // - plaintext
+    // - plaintext/ciphertext size
+    // - plaintext/ciphertext
     // - key1 size
     // - key1
     // - key2 size
     // - key2
 
-    char *plaintext, *cipher_1, *cipher_2, *key1, *key2;
+    char *text, *dct_1, *dct_2, *key1, *key2;
     int *key1_sequential, *key2_sequential;
-    int plaintext_size, key1_size, key2_size;
+    int text_size, key1_size, key2_size;
 
     printf("Please provide the following information:\n");
-    printf(" - plaintext size\n - plaintext\n - key1 size\n - key1\n - key2 size\n - key2\n");
+    if(mode == 0) { printf(" - plaintext size\n - plaintext\n");}
+    else { printf(" - ciphertext size\n - ciphertext\n");}
+    printf("- key1 size\n - key1\n - key2 size\n - key2\n");
 
-    printf("\nPlaintext size: ");
-    scanf("%d", &plaintext_size);
-    plaintext = (char *)malloc(plaintext_size + 1);
+    if(mode == 0) { printf("\nPlaintext size: "); }
+    else { printf("\nCiphertext size: "); }
+    scanf("%d", &text_size);
+    text = (char *)malloc(text_size + 1);
 
-    printf("Plaintext: ");
-    scanf("%s", plaintext);
+    if(mode == 0) { printf("Plaintext: "); }
+    else { printf("Ciphertext: "); }
+    scanf("%s", text);
 
     printf("Key1 size: ");
     scanf("%d", &key1_size);
@@ -90,76 +95,30 @@ void encrypt() {
     key1_sequential = rearrange_key(key1, key1_size);
     key2_sequential = rearrange_key(key2, key2_size);
 
-    // Encrypt the text
-    cipher_1 = single_column_transposition(plaintext, plaintext_size, key1_sequential, key1_size, 0);
-    cipher_2 = single_column_transposition(cipher_1, plaintext_size, key2_sequential, key2_size, 0);
+    // Perform DCT on the text
+    if(mode == 0) { // Encrypt
+        dct_1 = single_column_transposition(text, text_size, key1_sequential, key1_size, 0);
+        dct_2 = single_column_transposition(dct_1, text_size, key2_sequential, key2_size, 0);
+    } else { // Decrypt
+        dct_1 = single_column_transposition(text, text_size, key2_sequential, key2_size, 1);
+        dct_2 = single_column_transposition(dct_1, text_size, key1_sequential, key1_size, 1);
+    }
 
-    // Display the encrypted ciphertext
-    printf("\n\nHere is your plaintext: %s", plaintext);
-    printf("\nHere is your encrypted ciphertext: %s\n", cipher_2);
+    // Display the encrypted or decrypted text
+    printf("\n\nHere is your provided ");
+    if(mode == 0) {printf("plaintext");}
+    else {printf("ciphertext");}
+    printf(": %s", text);
 
-    // Free memory
-    free(plaintext);
-    free(cipher_1);
-    free(cipher_2);
-    free(key1);
-    free(key2);
-    free(key1_sequential);
-    free(key2_sequential);
-}
-void decrypt() {
-    // Prompt for
-    // - ciphertext size
-    // - ciphertext
-    // - key1 size
-    // - key1
-    // - key2 size
-    // - key2
-
-    char *ciphertext, *plaintext_1, *plaintext_2, *key1, *key2;
-    int *key1_sequential, *key2_sequential;
-    int ciphertext_size, key1_size, key2_size;
-
-    printf("Please provide the following information:\n");
-    printf(" - ciphertext size\n - ciphertext\n - key1 size\n - key1\n - key2 size\n - key2\n");
-
-    printf("\nCiphertext size: ");
-    scanf("%d", &ciphertext_size);
-    ciphertext = (char *)malloc(ciphertext_size + 1);
-
-    printf("Ciphertext: ");
-    scanf("%s", ciphertext);
-
-    printf("Key1 size: ");
-    scanf("%d", &key1_size);
-    key1 = (char *)malloc(key1_size + 1);
-
-    printf("Key1: ");
-    scanf("%s", key1);
-
-    printf("Key2 size: ");
-    scanf("%d", &key2_size);
-    key2 = (char *)malloc(key2_size + 1);
-
-    printf("Key2: ");
-    scanf("%s", key2);
-
-    // Convert keys into digits and rearrange to sequential order
-    key1_sequential = rearrange_key(key1, key1_size);
-    key2_sequential = rearrange_key(key2, key2_size);
-
-    // Encrypt the text
-    plaintext_1 = single_column_transposition(ciphertext, ciphertext_size, key2_sequential, key2_size, 2);
-    plaintext_2 = single_column_transposition(plaintext_1, ciphertext_size, key1_sequential, key1_size, 1);
-
-    // Display the encrypted ciphertext
-    printf("\n\nHere is your ciphertext: %s", ciphertext);
-    printf("\nHere is your decrypted plaintext: %s\n", plaintext_2);
+    printf("\nHere is your");
+    if(mode == 0) {printf("encrypted ciphertext");}
+    else {printf("decrypted plaintext");}
+    printf(": %s\n", dct_2);
 
     // Free memory
-    free(ciphertext);
-    free(plaintext_1);
-    free(plaintext_2);
+    free(text);
+    free(dct_1);
+    free(dct_2);
     free(key1);
     free(key2);
     free(key1_sequential);
@@ -242,13 +201,15 @@ char * single_column_transposition(char *p, int p_size, int *k_seq, int k_size, 
     for(int k = 0; k < k_size; ++k) {
         int c = k_seq[k]; // which column to take first
         for(int j = k_seq[k]; j < p_size; j += k_size) {
-            if(mode == 0) {
+            if(mode == 0) { // Encrypt
                 output[i++] = p[j];
-            } else {
+            } else { // Decrypt
                 output[j] = p[i++];
             }
         }
     }
+
+    output[p_size] = '\0'; // Just in case
 
     return output;
 }
