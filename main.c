@@ -66,7 +66,7 @@ void DCT(int mode) {
     printf("Please provide the following information:\n");
     if(mode == 0) { printf(" - plaintext size\n - plaintext\n");}
     else { printf(" - ciphertext size\n - ciphertext\n");}
-    printf("- key1 size\n - key1\n - key2 size\n - key2\n");
+    printf(" - key1 size\n - key1\n - key2 size\n - key2\n");
 
     if(mode == 0) { printf("\nPlaintext size: "); }
     else { printf("\nCiphertext size: "); }
@@ -95,7 +95,7 @@ void DCT(int mode) {
     key1_sequential = rearrange_key(key1, key1_size);
     key2_sequential = rearrange_key(key2, key2_size);
 
-    // Perform DCT on the text
+    // Perform DCT by running two sequential instances of single column transposition
     if(mode == 0) { // Encrypt
         dct_1 = single_column_transposition(text, text_size, key1_sequential, key1_size, 0);
         dct_2 = single_column_transposition(dct_1, text_size, key2_sequential, key2_size, 0);
@@ -110,7 +110,7 @@ void DCT(int mode) {
     else {printf("ciphertext");}
     printf(": %s", text);
 
-    printf("\nHere is your");
+    printf("\nHere is your ");
     if(mode == 0) {printf("encrypted ciphertext");}
     else {printf("decrypted plaintext");}
     printf(": %s\n", dct_2);
@@ -182,9 +182,9 @@ int * rearrange_key(char *key, int keysize) {
     // Map appropriately
     int *key_sequential = (int *)malloc((keysize + 1) * sizeof(int));
     int j = 0;
-    for(int letter_search = 0; letter_search < 26 && j < keysize; ++letter_search) {
-        for(int i = 0; i < keysize && j < keysize; ++i) {
-            if(key[i] == letter_search) {
+    for(int letter_search = 0; letter_search < 26 && j < keysize; ++letter_search) { // Goes through each letter since duplicates may occur
+        for(int i = 0; i < keysize && j < keysize; ++i) { // Find letters from left to right in the key
+            if(key[i] == letter_search) { // map positions to sequential order
                 key_sequential[j] = i;
                 j++;
             }
@@ -199,11 +199,10 @@ char * single_column_transposition(char *p, int p_size, int *k_seq, int k_size, 
 
     int i = 0;
     for(int k = 0; k < k_size; ++k) {
-        int c = k_seq[k]; // which column to take first
-        for(int j = k_seq[k]; j < p_size; j += k_size) {
-            if(mode == 0) { // Encrypt
+        for(int j = k_seq[k]; j < p_size; j += k_size) { // Go down column
+            if(mode == 0) { // Encrypt by writing out column-by-column
                 output[i++] = p[j];
-            } else { // Decrypt
+            } else { // Decrypt by filling column
                 output[j] = p[i++];
             }
         }
