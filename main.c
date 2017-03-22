@@ -8,6 +8,7 @@ void DCT(int);
 void decrypt_with_crib();
 int * rearrange_key(char *, int);
 char * single_column_transposition(char *, int, int *, int, int);
+int * get_coloumn_frequency(char * crib, int key1_size, int crib_size);
 
 
 int main() {
@@ -213,7 +214,53 @@ char * single_column_transposition(char *p, int p_size, int *k_seq, int k_size, 
     return output;
 }
 
+int * get_coloumn_frequency(char * crib, int key1_size, int crib_size){
 
+	int *coloumn_freq= (int *) malloc(key1_size*26*sizeof(int));
+	
+	for(int i=0;i<key1_size*26;i++){
+		coloumn_freq[i]=0;
+	}
+
+	for(int k = 0; k < key1_size; ++k) {
+        for(int j = k; j < crib_size; j += key1_size) { // Go down column
+           int letter= crib[j]-'A';
+           coloumn_freq[k*26+letter]++;
+        }
+    }
+
+    return coloumn_freq;
+}
+
+int get_first_col(char * ciphertext, int ciphertext_size, int * coloumn_freq, int key2_size, int key1_size){
+
+	int min_colsize= ciphertext_size/key2_size;
+	int *matches= (int *) malloc(key1_size*sizeof(int));
+
+	for(int i=0;i<key1_size;i++){
+		matches[i]=0;
+	}
+
+	for(int i=0;i<ciphertext_size;i+=min_colsize){
+		int letter= ciphertext[i]-'A';
+		for(int k=0;k<key1_size;k++){
+			if(column_freq[k*26+letter]>0){
+				column_freq[k*26+letter]--;
+				matches[k]++;
+			}
+		}
+	}
+
+	int max_pos=0;
+
+	for(int i=1;i<key1_size;i++){
+		if(matches[i]>max_pos){
+			max_pos=i;
+		}
+	}
+
+	return max_pos;
+}
 
 
 
