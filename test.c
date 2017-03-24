@@ -15,13 +15,13 @@ int main() {
     int * column_frequencies = get_column_frequency(crib, crib_size, key1_size);
 
     for(int i = 0; i < key1_size; ++i) {
-        printf("%d: ", i);
+        // printf("%d: ", i);
         for(int j = 0; j < 26; ++j) {
             if(column_frequencies[i*26+j] > 0) {
-                printf("%d%c ", column_frequencies[i*26+j], ('A'+j));
+                // printf("%d%c ", column_frequencies[i*26+j], ('A'+j));
             }
         }
-        printf("\n");
+        // printf("\n");
     }
 
     // Test key2_col_match
