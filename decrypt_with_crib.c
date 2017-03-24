@@ -88,14 +88,12 @@ int get_first_col(char * ciphertext, int ciphertext_size, int * column_frequenci
 
 	for(int i=0;i<ciphertext_size;i+=min_colsize){
 		int letter = ciphertext[i]-'A';
-        // printf("%c ", ciphertext[i]);
 		for(int k=0;k<key1_size;k++){
 			if(column_freq[k*26+letter]>0){
 				column_freq[k*26+letter]--;
 				matches[k]++;
 			}
 		}
-        // printf("\n");
 	}
 
 	int max_pos=0;
@@ -152,6 +150,7 @@ int * rearrange_key_putative(int *key, int keysize) {
 int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib, int crib_size, int * key2_putative, int key1_size, int key2_size, int * column_frequencies, int key2_col_match) {
     int min_colsize = ciphertext_size/key2_size;
 
+    // Find putative key for known values
     for(int i = 0, p = 0; i < key2_size; ++i) {
         int letter = ciphertext[p] - 'A';
         int count = column_frequencies[key2_col_match*26+letter];
@@ -182,7 +181,9 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
             }
         }
         // Update key value here
-        key2_putative[best_pos] = i;
+        if(best_pos != -1)
+          key2_putative[best_pos] = i;
+        printf("Best position for %d letter %c is %d\n", i, ciphertext[p], best_pos);
         --column_frequencies[key2_col_match*26+letter];
         printf("Key:            ");
         for(int n = 0; n < key2_size; ++n) {
@@ -193,12 +194,27 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
 
         // Increment p properly
         p += min_colsize;
-        // if(i > -1 && key2_putative[i] < ciphertext_size % 16) {
-        //     ++p;
-        //     printf("true for %d, %d", key2_putative[i], ciphertext_size % 16);
-        // }
+        if(best_pos > -1 && best_pos < ciphertext_size % 16) {
+          // Best position represents the column of the crib's SCT matrix
+            ++p;
+        }
         free(letter_instances);
     }
+
+    // Find putative key with unknown values
+    int count = 0;
+    for(int i = 0; i < key2_size; ++i) {
+        if (key2_putative[i] == -1) {
+          ++count;
+        }
+    }
+    int * missing_positions = (int *) malloc (count * sizeof(int));
+    for(int i = 0, j = 0; i < key2_size; ++i) {
+        if (key2_putative[i] == -1) {
+            missing_positions[j++] = i;
+        }
+    } // determined missing positions
+    // TODO: Guestimate each missing position until the entire key is found
 
     return key2_putative;
 }
@@ -234,8 +250,6 @@ char * decrypt_partial(char * ciphertext, int ciphertext_size, int * key2_putati
 }
 
 int partial_score(char * possible_intermediate_ciphertext, int ciphertext_size, char * crib, int crib_size, int key2_size, int key1_size, int key2_col_match) {
-    // printf("intermediate ciphertext:\n%s\n", possible_intermediate_ciphertext);
-
     // Try to find the crib's column substrings in the ciphertext
     int score = 0;
 
