@@ -1,8 +1,16 @@
+// Header Prototypes
+int * get_column_frequency(char *, int, int);
+int get_first_col(char *, int, int *, int, int);
+int * get_key2_putative(char *, int, char *, int, int, int *, int, int);
+int * rearrange_key_putative(int *, int);
+int * key2_find_permutations(char *, int, char *, int, int *, int, int, int *, int);
 char * decrypt_partial(char *, int, int *, int, int);
 int partial_score(char *, int, char *, int, int, int, int);
+int * find_key1(char *, int, char *, int, int *, int, int);
+void printkey(int *, int);
+void decrypt_with_crib();
 
-
-
+// Implement Functions
 void decrypt_with_crib() {
     // Prompt for
     // - ciphertext size
@@ -12,7 +20,8 @@ void decrypt_with_crib() {
     // - key1 size
     // - key2 size
 
-    char *ciphertext, *crib, *key1, *key2;
+    char *ciphertext, *crib;
+    int *key1, *key2;
     int ciphertext_size, crib_size, key1_size, key2_size;
 
     printf("Please provide the following information:\n");
@@ -34,23 +43,37 @@ void decrypt_with_crib() {
 
     printf("Key1 size: ");
     scanf("%d", &key1_size);
-    key1 = (char *)malloc(key1_size + 1);
 
     printf("Key2 size: ");
     scanf("%d", &key2_size);
-    key2 = (char *)malloc(key2_size + 1);
 
     // Capitalize letters if necessary
     capitalize(ciphertext, ciphertext_size);
     capitalize(crib, crib_size);
 
     // Perform decryption with crib
+    int * column_frequencies = get_column_frequency(crib, crib_size, key1_size);
+
+    // Find the column that matches the first part of key2 before proceeding
+    int key2_col_match = get_first_col(ciphertext, ciphertext_size, column_frequencies, key2_size, key1_size);
+
+    // Find key2 and key1
+    key2 = get_key2_putative(ciphertext, ciphertext_size, crib, crib_size, key2_col_match, column_frequencies, key1_size, key2_size);
+    key2 = key2_find_permutations(ciphertext, ciphertext_size, crib, crib_size, key2, key1_size, key2_size, column_frequencies, key2_col_match);
+    key1 = find_key1(ciphertext, ciphertext_size, crib, crib_size, key2, key2_size, key1_size);
+
+    printf("\n\nFound key1 to be: ");
+    printkey(key1, key1_size);
+    printf("\nFound key2 to be: ");
+    printkey(key2, key2_size);
+    printf("\n");
 
     // Free memory
     free(ciphertext);
     free(crib);
     free(key1);
     free(key2);
+    free(column_frequencies);
 }
 
 int * get_column_frequency(char * crib, int crib_size, int key1_size){
@@ -104,6 +127,8 @@ int get_first_col(char * ciphertext, int ciphertext_size, int * column_frequenci
 		}
 	}
 
+  free(matches);
+
 	return max_pos;
 }
 
@@ -155,6 +180,7 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
         int letter = ciphertext[p] - 'A';
         int count = column_frequencies[key2_col_match*26+letter];
 
+
         // Find all instances of the letter in the matched column
         int * letter_instances = (int *)malloc(count * sizeof(int));
         int k = 0;
@@ -179,17 +205,14 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
               score = curr_score;
               best_pos = letter_instances[i_in_col];
             }
+
+            // free(key2_sequential);
+            // free(possible_intermediate_ciphertext);
         }
         // Update key value here
         if(best_pos != -1)
           key2_putative[best_pos] = i;
-        printf("Best position for %d letter %c is %d\n", i, ciphertext[p], best_pos);
         --column_frequencies[key2_col_match*26+letter];
-        printf("Key:            ");
-        for(int n = 0; n < key2_size; ++n) {
-            printf("%d,", key2_putative[n]);
-        }
-        printf("\n");
 
 
         // Increment p properly
@@ -208,6 +231,8 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
           ++count;
         }
     }
+
+    // Find non-filled positions in the putative key
     int * missing_positions = (int *) malloc (count * sizeof(int));
     for(int i = 0, j = 0; i < key2_size; ++i) {
         if (key2_putative[i] == -1) {
@@ -215,6 +240,48 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
         }
     } // determined missing positions
     // TODO: Guestimate each missing position until the entire key is found
+    int * possible_positions_for_missing = (int *) malloc (count * sizeof(int));
+    int * found = (int *) malloc(key2_size * sizeof(int)); // Keep track of which values are in key2
+    for(int i = 0; i < key2_size; ++i) {
+        if(key2_putative[i] != -1) {
+            found[key2_putative[i]] = 1;
+        } else {
+            found[key2_putative[i]] = 0;
+        }
+    }
+    for(int i = 0, j = 0; i < key2_size; ++i) {
+        if(found[i] == 0) {
+            possible_positions_for_missing[j++] = i;
+        }
+    }
+    for(int i = 0; i < count; ++i) {
+        // Test a value for the putative key
+        int score = 0;
+        int best_pos = -1;
+        for(int j = 0; j < count; ++j) {
+            key2_putative[missing_positions[i]] = possible_positions_for_missing[j];
+            int * key2_sequential = rearrange_key_putative(key2_putative, key2_size);
+            char * possible_intermediate_ciphertext = decrypt_partial(ciphertext, ciphertext_size, key2_sequential, key2_size, key1_size);
+            int curr_score = partial_score(possible_intermediate_ciphertext, ciphertext_size, crib, crib_size, key2_size, key1_size, key2_col_match);
+            key2_putative[missing_positions[i]] = -1; // reset
+
+            free(key2_sequential);
+            free(possible_intermediate_ciphertext);
+
+            if (curr_score > score) {
+              score = curr_score;
+              best_pos = possible_positions_for_missing[j];
+            }
+        }
+
+        if(best_pos != -1) {
+            key2_putative[missing_positions[i]] = best_pos;
+        }
+    }
+
+    free(missing_positions);
+    free(possible_positions_for_missing);
+    free(found);
 
     return key2_putative;
 }
@@ -224,9 +291,6 @@ char * decrypt_partial(char * ciphertext, int ciphertext_size, int * key2_putati
     for(int j = 0; j < ciphertext_size; ++j) {
         output[j] = ' ';
     }
-
-    // int key2_putative_1[16] = {12,4,2,15,7,5,13,3,1,8,0,14,6,10,9,11};
-    // int *key2_putative = rearrange_key_putative(key2_putative_1, key2_size);
 
     int i = 0;
     for(int k = 0; k < key2_size; ++k) {
@@ -281,4 +345,58 @@ int partial_score(char * possible_intermediate_ciphertext, int ciphertext_size, 
     score += best_score_partial;
 
     return score;
+}
+
+int * find_key1(char * ciphertext, int ciphertext_size, char * crib, int crib_size, int * key2, int key2_size, int key1_size) {
+    // Find the first key given the deciphered key2
+    int * rearranged_key2 = rearrange_key_putative(key2, key2_size);
+    char * intermediate_ciphertext = single_column_transposition(ciphertext, ciphertext_size, rearranged_key2, key2_size, 1);
+    int min_col_size_key1 = ciphertext_size / key1_size;
+    int key1_col_offset_limit = ciphertext_size % key1_size;
+
+    int * key1 = (int *) malloc (key1_size * sizeof(int));
+    for(int i = 0; i < key1_size; ++i) {
+        key1[i] = -1;
+    }
+
+    for(int i = 0, col = 0; i < ciphertext_size && col < key1_size; ++col) {
+        int most_likely_column = -1;
+        int score = 0;
+
+        // Do checks
+        for(int j = 0; j < key1_size; ++j) {
+            int curr_score = 0;
+            // Compare first matrix columns to values here;
+            for(int k = j, m = 0; k < crib_size && i+m < ciphertext_size; k += key1_size, ++m) {
+                if(crib[k] == intermediate_ciphertext[i+m]) {
+                    ++curr_score;
+                }
+            }
+
+            if(curr_score > score) {
+                score = curr_score;
+                most_likely_column = j;
+            }
+        }
+
+        // Build key1
+        key1[most_likely_column] = col;
+
+        // Increment i accordingly
+        i += min_col_size_key1;
+        if(most_likely_column < key1_col_offset_limit) {
+            ++i;
+        }
+    }
+
+    free(rearranged_key2);
+    free(intermediate_ciphertext);
+
+    return key1;
+}
+
+void printkey(int * key, int key_size) {
+    for(int i = 0; i < key_size; ++i) {
+        printf("%c", key[i] + 'A');
+    }
 }

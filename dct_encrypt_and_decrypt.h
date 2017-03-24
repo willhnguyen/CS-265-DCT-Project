@@ -1,10 +1,9 @@
 // Header Prototypes
 int * rearrange_key(char *, int);
 char * single_column_transposition(char *, int, int *, int, int);
-void capitalize(char *, int);
 void DCT(int);
 
-// Implement functions
+// Implement Functions
 void DCT(int mode) {
     // Prompt for
     // - plaintext/ciphertext size
@@ -95,7 +94,7 @@ int * rearrange_key(char *key, int keysize) {
             key[i] -= 'A';
         }
     }
-    
+
     int *key_sequential = (int *)malloc((keysize + 1) * sizeof(int));
 
     int j = 0;
@@ -128,15 +127,4 @@ char * single_column_transposition(char *p, int p_size, int *k_seq, int k_size, 
     output[p_size] = '\0'; // Just in case
 
     return output;
-}
-
-void capitalize(char * text, int length) {
-    // Capitalizes text in place
-    for(int i = 0; i < length; ++i) {
-        if(text[i] >= 'a' && text[i] <= 'A') {
-            text[i] -= 'a' - 'A';
-        }
-    }
-
-    // TODO: Consider removing spaces or periods, if that is necessary
 }

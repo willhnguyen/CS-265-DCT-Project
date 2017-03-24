@@ -8,10 +8,8 @@ int chooseMode();
 void capitalize(char *, int);
 
 // Custom headers
-#include "dct_encrypt_and_decrypt.c"
-#include "decrypt_with_crib.c"
-
-
+#include "dct_encrypt_and_decrypt.h"
+#include "decrypt_with_crib.h"
 
 int main() {
     printf("Welcome to the Double Column Transposition tool!\n");
@@ -55,7 +53,16 @@ int chooseMode() {
 
     return mode;
 }
+void capitalize(char * text, int length) {
+    // Capitalizes text in place
+    for(int i = 0; i < length; ++i) {
+        if(text[i] >= 'a' && text[i] <= 'A') {
+            text[i] -= 'a' - 'A';
+        }
+    }
 
+    // TODO: Consider removing spaces or periods, if that is necessary
+}
 
 
 
