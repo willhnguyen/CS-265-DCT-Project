@@ -206,8 +206,9 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
               best_pos = letter_instances[i_in_col];
             }
 
-            // free(key2_sequential);
-            // free(possible_intermediate_ciphertext);
+            // Problem: Freeing these cause core dumps and segmentation faults on Linux
+            free(key2_sequential);
+            free(possible_intermediate_ciphertext);
         }
         // Update key value here
         if(best_pos != -1)
