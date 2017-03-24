@@ -29,7 +29,7 @@ int main() {
 
     printf("Matching Column: %c\n", ('a' + key2_col_match));
 
-    char * key2 = get_key2_putative(ciphertext, ciphertext_size, crib, crib_size, key2_col_match, column_frequencies, key1_size, key2_size);
+    int * key2 = get_key2_putative(ciphertext, ciphertext_size, crib, crib_size, key2_col_match, column_frequencies, key1_size, key2_size);
     key2 = key2_find_permutations(ciphertext, ciphertext_size, crib, crib_size, key2, key1_size, key2_size, column_frequencies, key2_col_match);
 
     return 0;

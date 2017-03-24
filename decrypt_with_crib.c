@@ -1,5 +1,5 @@
-char * decrypt_partial(char * ciphertext, int ciphertext_size, char * key2_putative, int key2_size, int key1_size);
-int partial_score(char * possible_intermediate_ciphertext, int ciphertext_size, char * crib, int crib_size, int key2_size, int key1_size);
+char * decrypt_partial(char *, int, int *, int, int);
+int partial_score(char *, int, char *, int, int, int, int);
 
 
 
@@ -52,7 +52,6 @@ void decrypt_with_crib() {
     free(key1);
     free(key2);
 }
-
 
 int * get_column_frequency(char * crib, int crib_size, int key1_size){
     // Creates a table of frequencies for letters A-Z for easy lookup and compare
@@ -110,10 +109,10 @@ int get_first_col(char * ciphertext, int ciphertext_size, int * column_frequenci
 	return max_pos;
 }
 
-char * get_key2_putative(char * ciphertext, int ciphertext_size, char * crib, int crib_size, int most_likely_first_column, int * column_frequencies, int key1_size, int key2_size) {
+int * get_key2_putative(char * ciphertext, int ciphertext_size, char * crib, int crib_size, int most_likely_first_column, int * column_frequencies, int key1_size, int key2_size) {
     int min_colsize = ciphertext_size/key2_size;
 
-    char * key2 = (char *)malloc(key2_size);
+    int * key2 = (int *)malloc(key2_size*sizeof(int));
     for(int i = 0; i < key2_size; ++i) {
         key2[i] = -1;
     }
@@ -133,45 +132,36 @@ char * get_key2_putative(char * ciphertext, int ciphertext_size, char * crib, in
     return key2;
 }
 
-// void swap (int *x, int *y)
-// {
-//     int temp;
-//     temp = *x;
-//     *x = *y;
-//     *y = temp;
-// }
-//
-//
-//
-// void heap_permute(char * ciphertext, int ciphertext_size, int * v, int ns) {
-//     int * c = (int *)malloc(n * sizeof(int));
-//     for(int j = 0; j < n; ++n) {
-//         c[j] = 0;
-//     }
-//
-//     // output(v)
-//
-//     for (int i = 0; i < n; i++) {
-//         if(c[i] < i) {
-//                 if (n % 2 == 0) {
-//                     swap(&v[0], &v[i]);
-//         	    }
-//                 else {
-//                     swap(&v[c[i]], &v[i]);
-//                 }
-//                 // output(v)
-//                 c[i] += 1;
-//                 i = 0;
-//             }
-//     	}
-//         else {
-//             c[i] = 0;
-//             i += 1;
-//         }
-//     }
-// }
+int * rearrange_key_putative(int *key, int keysize) {
+    // Map appropriately
+    int *key_sequential = (int *)malloc((keysize + 1) * sizeof(int));
+    for(int i = 0; i < keysize; ++i) {
+        key_sequential[i] = -1;
+    }
 
-char * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib, int crib_size, char * key2_putative, int key1_size, int key2_size, int * column_frequencies, int key2_col_match) {
+    int j = 0;
+    for(int i = 0; i < keysize; ++i) {
+        if(key[i] != -1) {
+            key_sequential[key[i]] = i;
+        }
+    }
+
+    printf("Key:            ");
+    for(int i = 0; i < keysize; ++i) {
+        printf("%d,", key[i]);
+    }
+    printf("\n");
+
+    printf("Rearranged Key: ");
+    for(int i = 0; i < keysize; ++i) {
+        printf("%d ", key_sequential[i]);
+    }
+    printf("\n");
+
+    return key_sequential;
+}
+
+int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib, int crib_size, int * key2_putative, int key1_size, int key2_size, int * column_frequencies, int key2_col_match) {
     int min_colsize = ciphertext_size/key2_size;
 
     for(int i = 0, p = 0; i < key2_size; ++i) {
@@ -187,6 +177,7 @@ char * key2_find_permutations(char * ciphertext, int ciphertext_size, char * cri
         int * letter_instances = (int *)malloc(count * sizeof(int));
         for(int j = key2_col_match, k = 0, a = 0; j < crib_size; j += key1_size, ++a) {
             if(crib[j] - 'A' == letter) {
+                // TODO: Ignore the letters that are already placed inside key2_putative
                 letter_instances[k++] = a;
                 // printf("%d ", a);
             }
@@ -196,21 +187,28 @@ char * key2_find_permutations(char * ciphertext, int ciphertext_size, char * cri
         // Find which instance of letter is the actual one by scoring the deciphered ciphertext
         int score = 0;
         int best_pos = -1;
-        // int key2_putative_x[16] = {12,4,2,15,7,5,13,3,1,8,0,14,6,10,9,11};
         for(int i_in_col = 0; i_in_col < count; ++i_in_col) {
             key2_putative[letter_instances[i_in_col]] = i;
-            // char * possible_intermediate_ciphertext = decrypt_partial(ciphertext, ciphertext_size, key2_putative, key2_size, key1_size);
-            // int score = partial_score(possible_intermediate_ciphertext, ciphertext_size, crib, crib_size, key2_size, key1_size);
-            printf("Begin\n");
-            printf("ciphertext: %d %s\n", ciphertext_size, ciphertext);
-            int * key2_sequential = rearrange_key(key2_putative, key2_size);
-            char * intermediate = single_column_transposition(ciphertext, ciphertext_size, key2_putative, key2_size, 1);
-            printf("%s\n", intermediate);
+
+            int * key2_sequential = rearrange_key_putative(key2_putative, key2_size);
+            char * possible_intermediate_ciphertext = decrypt_partial(ciphertext, ciphertext_size, key2_sequential, key2_size, key1_size);
+            int curr_score = partial_score(possible_intermediate_ciphertext, ciphertext_size, crib, crib_size, key2_size, key1_size, key2_col_match);
             key2_putative[letter_instances[i_in_col]] = -1; // reset
+
+            printf("score: %d\n", curr_score);
+
+            if (curr_score > score) {
+              score = curr_score;
+              best_pos = letter_instances[i_in_col];
+            }
         }
+        // Update key value here
+        printf("Best score value is: %d\n", best_pos);
+        key2_putative[best_pos] = i;
+        int * key2_sequential_test = rearrange_key_putative(key2_putative, key2_size);
 
         // TODO: REMOVE THIS BREAK STATEMENT
-        break;
+        // break;
 
         // Increment p properly
         p += min_colsize;
@@ -224,68 +222,35 @@ char * key2_find_permutations(char * ciphertext, int ciphertext_size, char * cri
     return key2_putative;
 }
 
-char * decrypt_partial(char * ciphertext, int ciphertext_size, char * key2_putative_x, int key2_size, int key1_size) {
+char * decrypt_partial(char * ciphertext, int ciphertext_size, int * key2_putative, int key2_size, int key1_size) {
     char *output = (char *)malloc(ciphertext_size + 1);
     for(int j = 0; j < ciphertext_size; ++j) {
         output[j] = ' ';
     }
 
-    char key2_putative[16] = {'M'-'A',
-                            'E'-'A',
-                            'C'-'A',
-                            'P'-'A',
-                            'H'-'A',
-                            'F'-'A',
-                            'N'-'A',
-                            'D'-'A',
-                            'B'-'A',
-                            'I'-'A',
-                            'A'-'A',
-                            'O'-'A',
-                            'G'-'A',
-                            'K'-'A',
-                            'J'-'A',
-                            'L'-'A'};
+    // int key2_putative_1[16] = {12,4,2,15,7,5,13,3,1,8,0,14,6,10,9,11};
+    // int *key2_putative = rearrange_key_putative(key2_putative_1, key2_size);
 
-    printf("key2_putative: ");
+    printf("key2_putative:  ");
     for(int k = 0; k < key2_size; ++k){
         printf("%d ", key2_putative[k]);
     }
     printf("\n");
 
 
-    // int i = 0;
-    // for(int k = 0; k < key2_size; ++k) {
-    //     int m = key2_putative[k];
-    //     for(int j = m; j < ciphertext_size; j += key2_size) { // Go down column
-    //         // if(j == -1) {
-    //         //     i += ciphertext_size / key2_size;
-    //         //     if(k <= ciphertext_size % key2_size) {
-    //         //         ++i;
-    //         //     }
-    //         //     break;
-    //         // }
-    //         if(j == -1) {
-    //             j = 0;
-    //         }
-    //         if(m == -1) {
-    //             i++;
-    //         }
-    //         else{
-    //             output[j] = ciphertext[i++];
-    //         }
-    //     }
-    // }
-
-    int mode = 1;
     int i = 0;
     for(int k = 0; k < key2_size; ++k) {
-        for(int j = key2_putative[k]; j < ciphertext_size; j += key2_size) { // Go down column
-            if(mode == 0) { // Encrypt by writing out column-by-column
-                output[i++] = ciphertext[j];
-            } else { // Decrypt by filling column
-                output[j] = ciphertext[i++];
+        int m = key2_putative[k];
+        for(int j = m; j < ciphertext_size; j += key2_size) { // Go down column
+            if(j == -1) {
+                i += ciphertext_size / key2_size;
+                if(key2_putative[k] > -1 && key2_putative[k] < ciphertext_size % key2_size) {
+                    ++i;
+                }
+                break;
             }
+            output[j] = ciphertext[i++];
+
         }
     }
 
@@ -295,28 +260,43 @@ char * decrypt_partial(char * ciphertext, int ciphertext_size, char * key2_putat
 
     return output;
 }
-int partial_score(char * possible_intermediate_ciphertext, int ciphertext_size, char * crib, int crib_size, int key2_size, int key1_size) {
-    return 0;
+
+int partial_score(char * possible_intermediate_ciphertext, int ciphertext_size, char * crib, int crib_size, int key2_size, int key1_size, int key2_col_match) {
+    // Try to find the crib's column substrings in the ciphertext
+    int score = 0;
+
+    int min_col_size_key1 = ciphertext_size / key1_size;
+    int offset_size = ciphertext_size % key1_size;
+
+    // Ignore the first column
+    int i = min_col_size_key1;
+    if(key2_col_match < offset_size) {
+      ++i;
+    }
+
+    // For each place in intermeidate ciphertext where we expect a column substring, match the substring and increase score count
+    for(; i < ciphertext_size;) {
+      int best_score_partial = 0, best_score_col = -1;
+      for(int k = 0; k < key1_size; ++k) { // Check for each column
+          int score_partial = 0;
+          for(int j = 0; j < crib_size / key1_size; ++j) {
+            if(possible_intermediate_ciphertext[i+j] == crib[k+j*key1_size]) {
+              ++score;
+            }
+          }
+
+          if (score_partial > best_score_partial) {
+            best_score_partial = score_partial;
+            best_score_col = k;
+          }
+      }
+      score += best_score_partial;
+
+      i += min_col_size_key1;
+      if (best_score_col != -1 && best_score_col < offset_size) {
+        ++i;
+      }
+    }
+
+    return score;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// end of spacer

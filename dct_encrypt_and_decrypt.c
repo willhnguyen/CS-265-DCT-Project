@@ -1,7 +1,10 @@
+// Header Prototypes
 int * rearrange_key(char *, int);
 char * single_column_transposition(char *, int, int *, int, int);
 void capitalize(char *, int);
+void DCT(int);
 
+// Implement functions
 void DCT(int mode) {
     // Prompt for
     // - plaintext/ciphertext size
@@ -85,28 +88,22 @@ void DCT(int mode) {
 }
 int * rearrange_key(char *key, int keysize) {
     // Assumption - keys may have duplicate values, are always A-Z
-    // TODO: UNCOMMENT BELOW
-    // for(int i = 0; i < keysize; ++i) { // change to integers
-    //     if(key[i] >= 'a' && key[i] <= 'z') {
-    //         key[i] -= 'a';
-    //     } else if(key[i] >= 'A' && key[i] <= 'Z') {
-    //         key[i] -= 'A';
-    //     }
-    // }
-
-    // Map appropriately
-    int *key_sequential = (int *)malloc((keysize + 1) * sizeof(int));
-    for(int i = 0; i < keysize; ++i) {
-        key_sequential = -1;
+    for(int i = 0; i < keysize; ++i) { // change to integers
+        if(key[i] >= 'a' && key[i] <= 'z') {
+            key[i] -= 'a';
+        } else if(key[i] >= 'A' && key[i] <= 'Z') {
+            key[i] -= 'A';
+        }
     }
+    
+    int *key_sequential = (int *)malloc((keysize + 1) * sizeof(int));
+
     int j = 0;
     for(int letter_search = 0; letter_search < 26 && j < keysize; ++letter_search) { // Goes through each letter since duplicates may occur
         for(int i = 0; i < keysize && j < keysize; ++i) { // Find letters from left to right in the key
-            if(key[i] != -1) {
-                if(key[i] == letter_search) { // map positions to sequential order
-                    key_sequential[j] = i;
-                    j++;
-                }
+            if(key[i] == letter_search) { // map positions to sequential order
+                key_sequential[j] = i;
+                j++;
             }
         }
     }
