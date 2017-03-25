@@ -174,6 +174,7 @@ int * rearrange_key_putative(int *key, int keysize) {
 
 int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib, int crib_size, int * key2_putative, int key1_size, int key2_size, int * column_frequencies, int key2_col_match) {
     int min_colsize = ciphertext_size/key2_size;
+    int key2_guesses = 0;
 
     // Find putative key for known values
     for(int i = 0, p = 0; i < key2_size; ++i) {
@@ -195,6 +196,7 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
         int best_pos = -1;
         for(int i_in_col = 0; i_in_col < k; ++i_in_col) {
             key2_putative[letter_instances[i_in_col]] = i;
+            ++key2_guesses;
 
             int * key2_sequential = rearrange_key_putative(key2_putative, key2_size);
             char * possible_intermediate_ciphertext = decrypt_partial(ciphertext, ciphertext_size, key2_sequential, key2_size, key1_size);
@@ -261,6 +263,8 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
         int best_pos = -1;
         for(int j = 0; j < count; ++j) {
             key2_putative[missing_positions[i]] = possible_positions_for_missing[j];
+            ++key2_guesses;
+
             int * key2_sequential = rearrange_key_putative(key2_putative, key2_size);
             char * possible_intermediate_ciphertext = decrypt_partial(ciphertext, ciphertext_size, key2_sequential, key2_size, key1_size);
             int curr_score = partial_score(possible_intermediate_ciphertext, ciphertext_size, crib, crib_size, key2_size, key1_size, key2_col_match);
@@ -283,6 +287,8 @@ int * key2_find_permutations(char * ciphertext, int ciphertext_size, char * crib
     free(missing_positions);
     free(possible_positions_for_missing);
     free(found);
+
+    printf("\nTook %d guesses to find valid key2\n", key2_guesses);
 
     return key2_putative;
 }

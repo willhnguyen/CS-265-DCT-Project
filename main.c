@@ -27,7 +27,7 @@ int main() {
             decrypt_with_crib();
             break;
         case(3):
-            DCT(2);
+            DCT(2); // Decrypt but also print out intermediate ciphertext
             break;
     }
 
