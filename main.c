@@ -63,35 +63,3 @@ void capitalize(char * text, int length) {
 
     // TODO: Consider removing spaces or periods, if that is necessary
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// end padding for text-editor scroll
